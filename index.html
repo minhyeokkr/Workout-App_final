@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>헬스 루틴</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="헬스 루틴">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" id="appIcon" href="">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #13131a; --card: #1a1a24; --border: #2a2a3a;
+    --accent: #c8ff00; --accent2: #ff6b35; --text: #f0f0f0; --muted: #888;
+    --day1: #c8ff00; --day2: #00e5ff; --day3: #ff6b35;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100dvh; padding: 24px 16px 60px;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(60px, env(safe-area-inset-bottom));
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(200,255,0,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 10% 80%, rgba(0,229,255,0.04) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; position: relative; z-index: 1; }
+  header { margin-bottom: 32px; }
+  .header-tag { font-family: 'Black Han Sans', sans-serif; font-size: 11px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-family: 'Black Han Sans', sans-serif; font-size: 36px; line-height: 1.1; letter-spacing: -1px; }
+  h1 span { color: var(--accent); }
+  .header-sub { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .progress-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; }
+  .progress-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .progress-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #a0ff00); border-radius: 99px; transition: width 0.4s cubic-bezier(.4,0,.2,1); width: 0%; }
+  .progress-count { font-family: 'Black Han Sans', sans-serif; font-size: 18px; color: var(--accent); white-space: nowrap; min-width: 44px; text-align: right; }
+  .day-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .day-tab { flex: 1; padding: 10px 0; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'Black Han Sans', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .day-tab.active-day1 { border-color: var(--day1); color: var(--day1); background: rgba(200,255,0,0.07); }
+  .day-tab.active-day2 { border-color: var(--day2); color: var(--day2); background: rgba(0,229,255,0.07); }
+  .day-tab.active-day3 { border-color: var(--day3); color: var(--day3); background: rgba(255,107,53,0.07); }
+  .day-panel { display: none; } .day-panel.visible { display: block; }
+  .section { margin-bottom: 16px; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-left: 4px; }
+  .ex-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 8px; transition: border-color 0.2s; }
+  .ex-card.done { border-color: rgba(200,255,0,0.3); }
+  .ex-card.done-blue { border-color: rgba(0,229,255,0.3); }
+  .ex-card.done-orange { border-color: rgba(255,107,53,0.3); }
+  .ex-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
+  .ex-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 13px; }
+  .ex-card.done .ex-check { background: var(--day1); border-color: var(--day1); }
+  .ex-card.done-blue .ex-check { background: var(--day2); border-color: var(--day2); }
+  .ex-card.done-orange .ex-check { background: var(--day3); border-color: var(--day3); }
+  .ex-info { flex: 1; }
+  .ex-name { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .ex-card.done .ex-name, .ex-card.done-blue .ex-name, .ex-card.done-orange .ex-name { text-decoration: line-through; opacity: 0.5; }
+  .ex-meta { font-size: 12px; color: var(--muted); }
+  .ex-badge { font-size: 10px; font-weight: 700; letter-spacing: 1px; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; }
+  .badge-green { background: rgba(200,255,0,0.12); color: var(--day1); }
+  .badge-blue { background: rgba(0,229,255,0.12); color: var(--day2); }
+  .badge-orange { background: rgba(255,107,53,0.12); color: var(--day3); }
+  .badge-gray { background: rgba(255,255,255,0.07); color: #aaa; }
+  .set-tracker { padding: 12px 16px 14px; display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--border); margin: 0 0 0 0; }
+  .set-dot { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface); font-size: 10px; font-weight: 700; color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+  .set-dot.done-set-green { background: var(--day1); border-color: var(--day1); color: #000; }
+  .set-dot.done-set-blue { background: var(--day2); border-color: var(--day2); color: #000; }
+  .set-dot.done-set-orange { background: var(--day3); border-color: var(--day3); color: #000; }
+  .rest-pill { font-size: 10px; color: var(--muted); display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .hiit-table { margin: 0 0 14px 0; border-top: 1px solid var(--border); padding-top: 12px; }
+  .hiit-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px; border-radius: 8px; margin-bottom: 4px; font-size: 12px; }
+  .hiit-row.work { background: rgba(200,255,0,0.07); }
+  .hiit-row.rest { background: rgba(255,255,255,0.04); }
+  .hiit-label { font-weight: 700; letter-spacing: 1px; font-size: 10px; }
+  .hiit-label.w { color: var(--day1); } .hiit-label.r { color: var(--muted); }
+  .hiit-label.w-blue { color: var(--day2); } .hiit-label.w-orange { color: var(--day3); }
+  .hiit-detail { color: var(--text); font-weight: 500; }
+  .hiit-note { font-size: 10px; color: var(--muted); padding: 6px 16px 12px; }
+  .science-pill { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 99px; background: rgba(255,255,255,0.06); color: var(--muted); margin-bottom: 8px; margin-left: 16px; }
+  .reset-btn { width: 100%; margin-top: 24px; padding: 14px; border-radius: 12px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Noto Sans KR', sans-serif; font-size: 13px; cursor: pointer; letter-spacing: 1px; transition: all 0.2s; }
+  .reset-btn:hover { border-color: #555; color: var(--text); }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--accent); color: #000; font-family: 'Black Han Sans', sans-serif; font-size: 14px; letter-spacing: 1px; padding: 12px 28px; border-radius: 99px; z-index: 999; transition: transform 0.4s cubic-bezier(.4,0,.2,1); white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .super-note { font-size: 10px; color: #ff6b35; font-weight: 700; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="header-tag">💪 Workout Routine</div>
+    <h1>주 3회<br><span>헬스 루틴</span></h1>
+    <p class="header-sub">각 운동과 세트를 완료하면 탭하세요<br>RIR 1~2 — 마지막 1~2개는 반드시 힘들어야 함</p>
+  </header>
+  <div class="progress-wrap">
+    <span class="progress-label">오늘 진행도</span>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <span class="progress-count" id="progressCount">0/0</span>
+  </div>
+  <div class="day-tabs">
+    <div class="day-tab active-day1" onclick="switchDay(1)">Day 1<br><span style="font-size:10px;font-weight:300">가슴·어깨</span></div>
+    <div class="day-tab" onclick="switchDay(2)">Day 2<br><span style="font-size:10px;font-weight:300">등·복근</span></div>
+    <div class="day-tab" onclick="switchDay(3)">Day 3<br><span style="font-size:10px;font-weight:300">어깨·하체</span></div>
+  </div>
+
+  <!-- DAY 1 -->
+  <div class="day-panel visible" id="day1">
+    <div class="section">
+      <div class="section-label">웨이트 트레이닝</div>
+      <div class="ex-card" id="ex-1-1">
+        <div class="ex-header" onclick="toggleSets('1-1','green')">
+          <div class="ex-check" id="chk-1-1">✓</div>
+          <div class="ex-info"><div class="ex-name">벤치프레스</div><div class="ex-meta">4세트 × 8~10회 · 휴식 2분</div></div>
+          <span class="ex-badge badge-green">가슴</span>
+        </div>
+        <div class="set-tracker" id="sets-1-1">
+          <div class="set-dot" onclick="dotClick(this,'green')">1</div><div class="set-dot" onclick="dotClick(this,'green')">2</div><div class="set-dot" onclick="dotClick(this,'green')">3</div><div class="set-dot" onclick="dotClick(this,'green')">4</div>
+          <span class="rest-pill">⏱ 2분 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-1-2">
+        <div class="ex-header" onclick="toggleSets('1-2','green')">
+          <div class="ex-check" id="chk-1-2">✓</div>
+          <div class="ex-info"><div class="ex-name">덤벨 숄더프레스</div><div class="ex-meta">3세트 × 10~12회 · 휴식 90초</div></div>
+          <span class="ex-badge badge-green">어깨</span>
+        </div>
+        <div class="set-tracker" id="sets-1-2">
+          <div class="set-dot" onclick="dotClick(this,'green')">1</div><div class="set-dot" onclick="dotClick(this,'green')">2</div><div class="set-dot" onclick="dotClick(this,'green')">3</div>
+          <span class="rest-pill">⏱ 90초 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-1-3">
+        <div class="ex-header" onclick="toggleSets('1-3','green')">
+          <div class="ex-check" id="chk-1-3">✓</div>
+          <div class="ex-info"><div class="ex-name">사이드 레터럴 레이즈</div><div class="ex-meta">3세트 × 12~15회 · <span class="super-note">슈퍼세트 ↓</span></div></div>
+          <span class="ex-badge badge-green">어깨</span>
+        </div>
+        <div class="set-tracker" id="sets-1-3">
+          <div class="set-dot" onclick="dotClick(this,'green')">1</div><div class="set-dot" onclick="dotClick(this,'green')">2</div><div class="set-dot" onclick="dotClick(this,'green')">3</div>
+          <span class="rest-pill">⏱ 60초 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-1-4">
+        <div class="ex-header" onclick="toggleSets('1-4','green')">
+          <div class="ex-check" id="chk-1-4">✓</div>
+          <div class="ex-info"><div class="ex-name">펙덱 플라이</div><div class="ex-meta">3세트 × 12~15회 · <span class="super-note">슈퍼세트 ↑</span></div></div>
+          <span class="ex-badge badge-green">가슴</span>
+        </div>
+        <div class="set-tracker" id="sets-1-4">
+          <div class="set-dot" onclick="dotClick(this,'green')">1</div><div class="set-dot" onclick="dotClick(this,'green')">2</div><div class="set-dot" onclick="dotClick(this,'green')">3</div>
+          <span class="rest-pill">⏱ 60초 휴식</span>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">유산소 · HIIT (15분)</div>
+      <div class="ex-card" id="cardio-1" style="cursor:default">
+        <div class="ex-header" style="cursor:default;padding-bottom:8px;">
+          <div class="ex-check" id="chk-cardio-1" onclick="toggleCardio('cardio-1')" style="cursor:pointer">✓</div>
+          <div class="ex-info"><div class="ex-name">HIIT 인터벌 러닝 <span style="font-size:11px;color:var(--muted);font-weight:400">— 15분</span></div><div class="ex-meta">웨이트 후 지방산화↑ · 인터벌 60초 이하 구조</div></div>
+          <span class="ex-badge badge-green">유산소</span>
+        </div>
+        <span class="science-pill">📄 HIIT &lt;60s 인터벌이 체지방률 감소에 효과적 (PMC 2023)</span>
+        <div class="hiit-table">
+          <div class="hiit-row rest"><span class="hiit-label r">워밍업</span><span class="hiit-detail">6km/h — 2분</span></div>
+          <div class="hiit-row work"><span class="hiit-label w">전력 ×6회</span><span class="hiit-detail">12~13km/h — 40초</span></div>
+          <div class="hiit-row rest"><span class="hiit-label r">회복 ×6회</span><span class="hiit-detail">6~7km/h — 80초</span></div>
+          <div class="hiit-row rest"><span class="hiit-label r">쿨다운</span><span class="hiit-detail">5km/h — 1분</span></div>
+        </div>
+        <div class="hiit-note">💡 전력 구간: 대화 불가 강도 유지 · 총 6라운드 · 완료 후 체크 탭</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 2 -->
+  <div class="day-panel" id="day2">
+    <div class="section">
+      <div class="section-label">웨이트 트레이닝</div>
+      <div class="ex-card" id="ex-2-1">
+        <div class="ex-header" onclick="toggleSets('2-1','blue')">
+          <div class="ex-check" id="chk-2-1">✓</div>
+          <div class="ex-info"><div class="ex-name">풀업 (와이드그립)</div><div class="ex-meta">4세트 × 최대횟수 (RIR 1~2) · 휴식 2분</div></div>
+          <span class="ex-badge badge-blue">등·어깨</span>
+        </div>
+        <div class="set-tracker" id="sets-2-1">
+          <div class="set-dot" onclick="dotClick(this,'blue')">1</div><div class="set-dot" onclick="dotClick(this,'blue')">2</div><div class="set-dot" onclick="dotClick(this,'blue')">3</div><div class="set-dot" onclick="dotClick(this,'blue')">4</div>
+          <span class="rest-pill">⏱ 2분 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-2-2">
+        <div class="ex-header" onclick="toggleSets('2-2','blue')">
+          <div class="ex-check" id="chk-2-2">✓</div>
+          <div class="ex-info"><div class="ex-name">랫풀다운</div><div class="ex-meta">3세트 × 10~12회 · 휴식 90초</div></div>
+          <span class="ex-badge badge-blue">등</span>
+        </div>
+        <div class="set-tracker" id="sets-2-2">
+          <div class="set-dot" onclick="dotClick(this,'blue')">1</div><div class="set-dot" onclick="dotClick(this,'blue')">2</div><div class="set-dot" onclick="dotClick(this,'blue')">3</div>
+          <span class="rest-pill">⏱ 90초 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-2-3">
+        <div class="ex-header" onclick="toggleSets('2-3','blue')">
+          <div class="ex-check" id="chk-2-3">✓</div>
+          <div class="ex-info"><div class="ex-name">시티드 로우</div><div class="ex-meta">3세트 × 12회 · <span class="super-note">슈퍼세트 ↓</span></div></div>
+          <span class="ex-badge badge-blue">등</span>
+        </div>
+        <div class="set-tracker" id="sets-2-3">
+          <div class="set-dot" onclick="dotClick(this,'blue')">1</div><div class="set-dot" onclick="dotClick(this,'blue')">2</div><div class="set-dot" onclick="dotClick(this,'blue')">3</div>
+          <span class="rest-pill">⏱ 60초 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-2-4">
+        <div class="ex-header" onclick="toggleSets('2-4','blue')">
+          <div class="ex-check" id="chk-2-4">✓</div>
+          <div class="ex-info"><div class="ex-name">페이스풀</div><div class="ex-meta">3세트 × 12회 · <span class="super-note">슈퍼세트 ↑</span></div></div>
+          <span class="ex-badge badge-blue">후면삼각</span>
+        </div>
+        <div class="set-tracker" id="sets-2-4">
+          <div class="set-dot" onclick="dotClick(this,'blue')">1</div><div class="set-dot" onclick="dotClick(this,'blue')">2</div><div class="set-dot" onclick="dotClick(this,'blue')">3</div>
+          <span class="rest-pill">⏱ 60초 휴식</span>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">복근</div>
+      <div class="ex-card" id="ex-2-5">
+        <div class="ex-header" onclick="toggleSets('2-5','blue')">
+          <div class="ex-check" id="chk-2-5">✓</div>
+          <div class="ex-info"><div class="ex-name">크런치</div><div class="ex-meta">3세트 × 20회 · <span class="super-note">슈퍼세트 ↓</span></div></div>
+          <span class="ex-badge badge-blue">복근</span>
+        </div>
+        <div class="set-tracker" id="sets-2-5">
+          <div class="set-dot" onclick="dotClick(this,'blue')">1</div><div class="set-dot" onclick="dotClick(this,'blue')">2</div><div class="set-dot" onclick="dotClick(this,'blue')">3</div>
+          <span class="rest-pill">⏱ 45초 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-2-6">
+        <div class="ex-header" onclick="toggleSets('2-6','blue')">
+          <div class="ex-check" id="chk-2-6">✓</div>
+          <div class="ex-info"><div class="ex-name">레그레이즈</div><div class="ex-meta">3세트 × 15회 · <span class="super-note">슈퍼세트 ↑</span></div></div>
+          <span class="ex-badge badge-blue">복근</span>
+        </div>
+        <div class="set-tracker" id="sets-2-6">
+          <div class="set-dot" onclick="dotClick(this,'blue')">1</div><div class="set-dot" onclick="dotClick(this,'blue')">2</div><div class="set-dot" onclick="dotClick(this,'blue')">3</div>
+          <span class="rest-pill">⏱ 45초 휴식</span>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">유산소 · 스프린트 HIIT (15분)</div>
+      <div class="ex-card" id="cardio-2" style="cursor:default">
+        <div class="ex-header" style="cursor:default;padding-bottom:8px;">
+          <div class="ex-check" id="chk-cardio-2" onclick="toggleCardio('cardio-2')" style="cursor:pointer">✓</div>
+          <div class="ex-info"><div class="ex-name">스프린트 인터벌 <span style="font-size:11px;color:var(--muted);font-weight:400">— 15분</span></div><div class="ex-meta">근글리코겐 고갈 후 지방 연소 극대화</div></div>
+          <span class="ex-badge badge-blue">유산소</span>
+        </div>
+        <span class="science-pill">📄 웨이트 후 유산소 → 내장지방·체지방 감소 유의미 (2025 RCT)</span>
+        <div class="hiit-table">
+          <div class="hiit-row rest"><span class="hiit-label r">워밍업</span><span class="hiit-detail">6km/h — 1분 30초</span></div>
+          <div class="hiit-row" style="background:rgba(0,229,255,0.07)"><span class="hiit-label w-blue">스프린트 ×7회</span><span class="hiit-detail">13~14km/h — 30초</span></div>
+          <div class="hiit-row rest"><span class="hiit-label r">회복 ×7회</span><span class="hiit-detail">6km/h — 60초</span></div>
+          <div class="hiit-row rest"><span class="hiit-label r">쿨다운</span><span class="hiit-detail">5km/h — 1분</span></div>
+        </div>
+        <div class="hiit-note">💡 스프린트 30초 → 회복 60초 = 1:2 비율 · EPOC 극대화</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 3 -->
+  <div class="day-panel" id="day3">
+    <div class="section">
+      <div class="section-label">웨이트 트레이닝</div>
+      <div class="ex-card" id="ex-3-1">
+        <div class="ex-header" onclick="toggleSets('3-1','orange')">
+          <div class="ex-check" id="chk-3-1">✓</div>
+          <div class="ex-info"><div class="ex-name">바벨 오버헤드프레스</div><div class="ex-meta">4세트 × 8~10회 · 휴식 2분</div></div>
+          <span class="ex-badge badge-orange">어깨</span>
+        </div>
+        <div class="set-tracker" id="sets-3-1">
+          <div class="set-dot" onclick="dotClick(this,'orange')">1</div><div class="set-dot" onclick="dotClick(this,'orange')">2</div><div class="set-dot" onclick="dotClick(this,'orange')">3</div><div class="set-dot" onclick="dotClick(this,'orange')">4</div>
+          <span class="rest-pill">⏱ 2분 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-3-2">
+        <div class="ex-header" onclick="toggleSets('3-2','orange')">
+          <div class="ex-check" id="chk-3-2">✓</div>
+          <div class="ex-info"><div class="ex-name">풀업 (중립 or 내로우그립)</div><div class="ex-meta">3세트 × 최대횟수 · 휴식 90초</div></div>
+          <span class="ex-badge badge-orange">등·어깨</span>
+        </div>
+        <div class="set-tracker" id="sets-3-2">
+          <div class="set-dot" onclick="dotClick(this,'orange')">1</div><div class="set-dot" onclick="dotClick(this,'orange')">2</div><div class="set-dot" onclick="dotClick(this,'orange')">3</div>
+          <span class="rest-pill">⏱ 90초 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-3-3">
+        <div class="ex-header" onclick="toggleSets('3-3','orange')">
+          <div class="ex-check" id="chk-3-3">✓</div>
+          <div class="ex-info"><div class="ex-name">사이드 레터럴 레이즈</div><div class="ex-meta">4세트 × 15회 · 휴식 60초</div></div>
+          <span class="ex-badge badge-orange">어깨</span>
+        </div>
+        <div class="set-tracker" id="sets-3-3">
+          <div class="set-dot" onclick="dotClick(this,'orange')">1</div><div class="set-dot" onclick="dotClick(this,'orange')">2</div><div class="set-dot" onclick="dotClick(this,'orange')">3</div><div class="set-dot" onclick="dotClick(this,'orange')">4</div>
+          <span class="rest-pill">⏱ 60초 휴식</span>
+        </div>
+      </div>
+      <div class="ex-card" id="ex-3-4">
+        <div class="ex-header" onclick="toggleSets('3-4','orange')">
+          <div class="ex-check" id="chk-3-4">✓</div>
+          <div class="ex-info"><div class="ex-name">스쿼트 or 레그프레스</div><div class="ex-meta">3세트 × 10~12회 · 휴식 90초</div></div>
+          <span class="ex-badge badge-orange">하체</span>
+        </div>
+        <div class="set-tracker" id="sets-3-4">
+          <div class="set-dot" onclick="dotClick(this,'orange')">1</div><div class="set-dot" onclick="dotClick(this,'orange')">2</div><div class="set-dot" onclick="dotClick(this,'orange')">3</div>
+          <span class="rest-pill">⏱ 90초 휴식</span>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">복근</div>
+      <div class="ex-card" id="ex-3-5">
+        <div class="ex-header" onclick="toggleSets('3-5','orange')">
+          <div class="ex-check" id="chk-3-5">✓</div>
+          <div class="ex-info"><div class="ex-name">레그레이즈</div><div class="ex-meta">3세트 × 15회 · 휴식 45초</div></div>
+          <span class="ex-badge badge-orange">복근</span>
+        </div>
+        <div class="set-tracker" id="sets-3-5">
+          <div class="set-dot" onclick="dotClick(this,'orange')">1</div><div class="set-dot" onclick="dotClick(this,'orange')">2</div><div class="set-dot" onclick="dotClick(this,'orange')">3</div>
+          <span class="rest-pill">⏱ 45초 휴식</span>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">유산소 · Zone2 + 피니시 스프린트 (20분)</div>
+      <div class="ex-card" id="cardio-3" style="cursor:default">
+        <div class="ex-header" style="cursor:default;padding-bottom:8px;">
+          <div class="ex-check" id="chk-cardio-3" onclick="toggleCardio('cardio-3')" style="cursor:pointer">✓</div>
+          <div class="ex-info"><div class="ex-name">Zone2 + 마무리 스프린트 <span style="font-size:11px;color:var(--muted);font-weight:400">— 20분</span></div><div class="ex-meta">지방산화 베이스 + 마지막 EPOC 자극</div></div>
+          <span class="ex-badge badge-orange">유산소</span>
+        </div>
+        <span class="science-pill">📄 Zone2 + HIIT 조합이 체지방·심폐 모두 최적화 (2025)</span>
+        <div class="hiit-table">
+          <div class="hiit-row rest"><span class="hiit-label r">Zone2</span><span class="hiit-detail">8~9km/h — 13분 (대화 가능 강도)</span></div>
+          <div class="hiit-row" style="background:rgba(255,107,53,0.07)"><span class="hiit-label w-orange">피니시 ×4회</span><span class="hiit-detail">13~14km/h — 30초</span></div>
+          <div class="hiit-row rest"><span class="hiit-label r">회복 ×4회</span><span class="hiit-detail">6km/h — 45초</span></div>
+          <div class="hiit-row rest"><span class="hiit-label r">쿨다운</span><span class="hiit-detail">5km/h — 1분</span></div>
+        </div>
+        <div class="hiit-note">💡 Day3은 볼륨이 높아 Zone2로 회복 부담 줄이고 마지막만 터뜨리는 구조</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="resetDay()">↺ 오늘 초기화</button>
+</div>
+<div class="toast" id="toast">🔥 오늘 루틴 완료!</div>
+<script>
+  window.addEventListener('load', () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 180; canvas.height = 180;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0,0,180,180);
+    const grad = ctx.createRadialGradient(90,70,10,90,90,100);
+    grad.addColorStop(0,'rgba(200,255,0,0.3)'); grad.addColorStop(1,'rgba(200,255,0,0)');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,180,180);
+    ctx.font = '80px serif'; ctx.textAlign = 'center'; ctx.fillText('💪', 90, 105);
+    ctx.fillStyle = '#c8ff00'; ctx.font = 'bold 18px sans-serif'; ctx.fillText('헬스루틴', 90, 145);
+    document.getElementById('appIcon').href = canvas.toDataURL('image/png');
+  });
+  let currentDay = 1;
+  const dayExercises = {
+    1: ['ex-1-1','ex-1-2','ex-1-3','ex-1-4','cardio-1'],
+    2: ['ex-2-1','ex-2-2','ex-2-3','ex-2-4','ex-2-5','ex-2-6','cardio-2'],
+    3: ['ex-3-1','ex-3-2','ex-3-3','ex-3-4','ex-3-5','cardio-3']
+  };
+  function switchDay(d) {
+    currentDay = d;
+    document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('visible'));
+    document.getElementById('day'+d).classList.add('visible');
+    document.querySelectorAll('.day-tab').forEach((t,i) => { t.className = 'day-tab'; if(i+1===d) t.classList.add('active-day'+d); });
+    updateProgress();
+  }
+  function dotClick(dot, color) {
+    const cls = {green:'done-set-green',blue:'done-set-blue',orange:'done-set-orange'}[color];
+    dot.classList.toggle(cls);
+    const tracker = dot.closest('.set-tracker');
+    const dots = tracker.querySelectorAll('.set-dot');
+    const allDone = [...dots].every(d => d.classList.contains(cls));
+    const card = tracker.closest('.ex-card');
+    const doneClass = color==='green'?'done':color==='blue'?'done-blue':'done-orange';
+    allDone ? card.classList.add(doneClass) : card.classList.remove(doneClass);
+    updateProgress();
+  }
+  function toggleSets(id, color) {}
+  function toggleCardio(id) {
+    const card = document.getElementById(id);
+    const doneClasses = ['done','done-blue','done-orange'];
+    const hasDone = doneClasses.some(c => card.classList.contains(c));
+    doneClasses.forEach(c => card.classList.remove(c));
+    if(!hasDone) card.classList.add('done');
+    const chk = document.getElementById('chk-'+id);
+    if(chk) {
+      if(!hasDone) { chk.style.background='var(--day1)'; chk.style.borderColor='var(--day1)'; chk.style.color='#000'; }
+      else { chk.style.background=''; chk.style.borderColor=''; chk.style.color=''; }
+    }
+    updateProgress();
+  }
+  function updateProgress() {
+    const exIds = dayExercises[currentDay];
+    let done = 0;
+    exIds.forEach(id => { const el = document.getElementById(id); if(el && (el.classList.contains('done')||el.classList.contains('done-blue')||el.classList.contains('done-orange'))) done++; });
+    const total = exIds.length;
+    document.getElementById('progressFill').style.width = (total ? done/total*100 : 0) + '%';
+    document.getElementById('progressCount').textContent = done+'/'+total;
+    if(done===total && total>0) showToast();
+  }
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+  function resetDay() {
+    document.querySelectorAll('.set-dot').forEach(d => d.className = 'set-dot');
+    document.querySelectorAll('.ex-card').forEach(c => c.classList.remove('done','done-blue','done-orange'));
+    const chks = ['chk-cardio-1','chk-cardio-2','chk-cardio-3'];
+    chks.forEach(id => { const el = document.getElementById(id); if(el) { el.style.background=''; el.style.borderColor=''; el.style.color=''; }});
+    updateProgress();
+  }
+  updateProgress();
+</script>
+</body>
+</html>
